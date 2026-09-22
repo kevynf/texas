@@ -1,12 +1,12 @@
-# 从源码构建
+# Building from source
 
-中文 | [English](building-from-source.en.md)
+[中文](building-from-source.md) | English
 
 ---
 
-Cargo 负责构建流程。使用 [`rustup.rs`](https://rustup.rs/) 安装 Rust，然后安装操作系统所需的系统依赖。
+Cargo handles the build process. Install Rust with [`rustup.rs`](https://rustup.rs/), then install the system dependencies required by your operating system.
 
-### Linux 依赖
+### Linux dependencies
 
 #### Ubuntu
 
@@ -26,40 +26,38 @@ sudo dnf install clang libxkbcommon-devel libxcb-devel vulkan-loader-devel wayla
 sudo xbps-install -S base-devel clang libxkbcommon-devel vulkan-loader wayland-devel
 ```
 
-### 构建 Texas
+### Build Texas
 
-克隆仓库并进入目录：
+Clone this repository and enter its directory:
 
 ```sh
 git clone <repo-url> ~/texas
 cd ~/texas
 ```
 
-构建并安装应用：
+Build and install the application:
 
 ```sh
 cargo install --path . --bin texas --profile release-lto --locked
 ```
 
-在 Windows 上无需额外的构建步骤；自动发布工作流会打包主 `texas` 可执行文件的便携 ZIP。
-
-开发构建可以使用：
+For a development build, use:
 
 ```sh
 cargo build --frozen --bin texas
 cargo run --profile fastdev --bin texas
 ```
 
-Windows 便携版使用以下命令构建：
+Build the Windows portable version with:
 
 ```powershell
 cargo build --frozen --profile release-lto --features texas-app/portable --bin texas
 ```
 
-生成的可执行文件位于 `target/release-lto/texas.exe`。GitHub Actions 的发布
-工作流会将该文件打包为 `Texas-windows-portable.zip`。
+The executable is written to `target/release-lto/texas.exe`. The GitHub Actions
+release workflow packages it as `Texas-windows-portable.zip`.
 
-常用检查命令：
+Common checks are:
 
 ```sh
 cargo fmt --all --check
@@ -67,4 +65,4 @@ cargo clippy --workspace
 cargo test --workspace
 ```
 
-Texas 编译完成后，可执行文件位于 `$HOME/.cargo/bin/texas`，应自动加入 `PATH`。
+Once Texas is compiled, the executable will be available in `$HOME/.cargo/bin/texas` and should be available in `PATH` automatically.

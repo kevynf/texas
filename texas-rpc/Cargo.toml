@@ -3,7 +3,6 @@ name         = "texas-rpc"
 description  = "Data formats between texas components"
 license      = { workspace = true }
 version      = { workspace = true }
-authors      = { workspace = true }
 edition      = { workspace = true }
 rust-version = { workspace = true }
 

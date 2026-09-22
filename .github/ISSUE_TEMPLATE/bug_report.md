@@ -7,13 +7,18 @@ assignees: ''
 
 ---
 
-## Lapce Version
+## Texas Version
 
-The Lapce version you are using, which can be found in "About Lapce" at the top right settings icon. 
+The Texas version you are using, which can be found in "About Texas" at the top right settings icon.
+
+## Build information
+
+- Build type: portable release / local development build
+- Commit or tag:
 
 ## System information
 
-the operating system used, including its version, e.g. Windows 10, Ubuntu 18.04
+the operating system used, including its version, e.g. Windows 10, Windows 11
 
 ## Describe the bug
 A clear and concise description of what the bug is.

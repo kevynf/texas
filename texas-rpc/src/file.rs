@@ -321,27 +321,6 @@ impl FileNodeItem {
     }
 
     /// Returns an iterator over the ancestors of `path`, starting with the first descendant of `prefix`.
-    ///
-    /// # Example:
-    /// (ignored because the function is private but I promise this passes)
-    /// ```rust,ignore
-    /// # use texas_rpc::file::FileNodeItem;
-    /// # use std::path::{Path, PathBuf};
-    /// # use std::collections::HashMap;
-    /// #
-    /// let node_item = FileNodeItem {
-    ///     path_buf: PathBuf::from("/pre/fix"),
-    ///     // ...
-    /// #    is_dir: true,
-    /// #    read: false,
-    /// #    open: false,
-    /// #    children: HashMap::new(),
-    /// #    children_open_count: 0,
-    ///};
-    /// let mut iter = node_item.ancestors_rev(Path::new("/pre/fix/foo/bar")).unwrap();
-    /// assert_eq!(Some(Path::new("/pre/fix/foo")), iter.next());
-    /// assert_eq!(Some(Path::new("/pre/fix/foo/bar")), iter.next());
-    /// ```
     fn ancestors_rev<'a>(
         &self,
         path: &'a Path,

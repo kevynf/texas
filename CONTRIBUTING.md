@@ -1,53 +1,49 @@
-# How to contribute
-Thank you for your interest in contributing to Lapce! No contribution is too small and we consider _all_ contributions to the project. There are many ways to contribute (a few are listed here) but if you think of something else, join us on [Discord](https://discord.gg/n8tGJ6Rn6D) or let us know via an [issue](https://github.com/lapce/lapce/issues).
+# 贡献指南
 
-## Questions
-
-We're always around hanging on our [Discord](https://discord.gg/n8tGJ6Rn6D) server but if you're only participating on GitHub, you can open a [Discussion](https://github.com/lapce/lapce/discussions)
-
-## Feature Requests
-
-A feature request is _editor behaviour that you want to have included in Lapce_. We track feature requests on GitHub via [issues](https://github.com/lapce/lapce/issues). There are generally few kinds of features:
-
-### Core features
-
-A feature more suited to the core development of Lapce. If this is the case please make a suggestion in an [issue](https://github.com/lapce/lapce/issues).
-
-### Syntax highlighting
-
-There is main issue for tracking syntax highlighting grammars support at https://github.com/lapce/lapce/issues/272.
+中文 | [English](CONTRIBUTING.en.md)
 
 ---
 
-To reduce the number of duplicate requests, please search through the issues to see if something has already been suggested. If a feature you want has been suggested, then comment on that issue to let us know it's popular. You can use emoji-reactions to show us just how popular.
+感谢你考虑为 Texas 做出贡献！任何大小的贡献我们都欢迎。
 
-## Bug Reports
+## 功能请求
 
-Bugs should also be reported on GitHub via [issues](https://github.com/lapce/lapce/issues). This allows us to track them and see how prevalent they are.
+功能请求是指_你希望 Texas 包含的编辑器行为_。我们通过 GitHub [issues](../../issues) 追踪功能请求。功能请求一般分为两类：
 
-If you encounter a bug when using Lapce, check the issues to see if anyone else has encountered it. If it already exists, you can use emoji reactions so we can see community interest in specific issues and how important they are.
+### 核心功能
 
-Please follow the rule of [NoPlusOne](https://github.com/golang/go/wiki/NoPlusOne)
+适合 Texas 核心开发的功能。请在 [issue](../../issues) 中提出建议。
 
-## Pull Requests
+### 语法高亮
 
-If you want to write some code, develop the documentation, or otherwise work on a certain feature or bug, let us know by replying to or creating an [issue](https://github.com/lapce/lapce/issues).
+语法高亮通过 Tree-sitter 语法文件提供。
 
-Before submitting changes, run the same checks as CI:
+---
+
+为减少重复请求，请先搜索现有 issues。如果已有类似建议，可以通过评论或表情反应来表达支持。
+
+## Bug 报告
+
+Bug 同样通过 GitHub [issues](../../issues) 报告。
+
+如果你在使用 Texas 时遇到 bug，请先查看是否已有人报告。如果已有，可以通过表情反应来表示该问题的重要性。
+
+## 拉取请求
+
+如果你想编写代码、开发文档或修复某个功能或 bug，请先通过 [issue](../../issues) 告知我们。
+
+提交变更前，请运行与 CI 相同的检查：
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace
-cargo build --frozen --bin lapce
+cargo build --frozen --bin texas
 cargo test --workspace
 ```
 
-These checks keep formatting, linting, compilation, and tests local and predictable.
+这些检查确保格式、静态分析、编译和测试在本地一致且可预测。
 
-Pull requests should use the repository template and include a concise summary, scope and non-goals, the validation commands that were actually run, and any known risks or follow-up work. LLM-assisted changes follow the same requirements and must not claim checks or review results that have not occurred.
+拉取请求应使用仓库模板，包含简要摘要、范围和非目标、实际运行的验证命令，以及已知风险或后续工作。LLM 辅助的变更遵循相同要求，不得声称未实际执行的检查结果。
 
-We are currently in the process of improving the documentation for new developers/code contributors. Feel free to get started, or post a message on [Discord](https://discord.gg/n8tGJ6Rn6D) to see what can be done.
-
-## Contact
-
-As always, if you have any questions or are just not sure where to start, post a message into the [Discord](https://discord.gg/n8tGJ6Rn6D) server. We suggest you start here as it is the most popular way for Lapce's contributors and users to communicate.
+修改文档时，请同步更新对应的中英文文件。项目文档保持简短，优先维护
+README、构建说明和当前实现所需的技术说明。

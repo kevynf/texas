@@ -14,9 +14,12 @@
 
 <!-- Note behavior changes, limitations, or work left for a later change. -->
 
+## Documentation
+
+<!-- Note affected docs, or explain why no documentation update is needed. -->
+
 ## Checklist
 
 - [ ] Description matches the actual diff
 - [ ] Validation lists only checks that were actually run
 - [ ] No unrelated changes are included
-- [ ] Added an entry to `CHANGELOG.md` if this change could be valuable to users
