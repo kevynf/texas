@@ -98,7 +98,10 @@ pub(super) fn panic_hook() {
         }
 
         #[cfg(windows)]
-        error_modal("Error", &info.to_string());
+        error_modal(
+            &crate::i18n::system_text("error.title"),
+            &format!("{}\n{}", crate::i18n::system_text("error.panic"), info),
+        );
     }))
 }
 

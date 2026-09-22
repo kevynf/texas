@@ -60,12 +60,8 @@ pub fn status(
                 Mode::Insert => mode_i18n.text("keymap.insert"),
                 Mode::Visual(mode) => match mode {
                     VisualMode::Normal => mode_i18n.text("keymap.visual"),
-                    VisualMode::Linewise => {
-                        format!("{} Line", mode_i18n.text("keymap.visual"))
-                    }
-                    VisualMode::Blockwise => {
-                        format!("{} Block", mode_i18n.text("keymap.visual"))
-                    }
+                    VisualMode::Linewise => mode_i18n.text("keymap.visual-line"),
+                    VisualMode::Blockwise => mode_i18n.text("keymap.visual-block"),
                 },
                 Mode::Terminal => mode_i18n.text("keymap.terminal"),
             })
@@ -243,6 +239,7 @@ pub fn status(
         }),
         stack({
             let palette_clone = palette.clone();
+            let cursor_i18n = i18n.clone();
             let cursor_info = status_text(config, editor, move || {
                 if let Some(editor) = editor.get() {
                     let mut status = String::new();
@@ -253,24 +250,40 @@ pub fn status(
                         .buffer
                         .with(|buffer| cursor.get_line_col_char(buffer))
                     {
-                        status = format!(
-                            "Ln {}, Col {}, Char {}",
-                            line + 1,
-                            column + 1,
-                            character,
+                        status = cursor_i18n.text_with_args(
+                            "status.cursor-position",
+                            "Ln {line}, Col {column}, Char {char}",
+                            &[
+                                ("line", &(line + 1).to_string()),
+                                ("column", &(column + 1).to_string()),
+                                ("char", &character.to_string()),
+                            ],
                         );
                     }
                     if let Some(selection) = cursor.get_selection() {
                         let selection_range = selection.0.abs_diff(selection.1);
 
                         if selection.0 != selection.1 {
-                            status =
-                                format!("{status} ({selection_range} selected)");
+                            status = cursor_i18n.text_with_args(
+                                "status.selected",
+                                "{base} ({count} selected)",
+                                &[
+                                    ("base", &status),
+                                    ("count", &selection_range.to_string()),
+                                ],
+                            );
                         }
                     }
                     let selection_count = cursor.get_selection_count();
                     if selection_count > 1 {
-                        status = format!("{status} {selection_count} selections");
+                        status = cursor_i18n.text_with_args(
+                            "status.selections",
+                            "{base} {count} selections",
+                            &[
+                                ("base", &status),
+                                ("count", &selection_count.to_string()),
+                            ],
+                        );
                     }
                     return status;
                 }
@@ -292,12 +305,13 @@ pub fn status(
                 palette_clone.run(PaletteKind::LineEnding);
             });
             let palette_clone = palette.clone();
+            let language_i18n = i18n.clone();
             let language_info = status_text(config, editor, move || {
                 if let Some(editor) = editor.get() {
                     let doc = editor.doc_signal().get();
-                    doc.syntax().with(|s| s.language.name())
+                    doc.syntax().with(|s| s.language.name()).to_string()
                 } else {
-                    "unknown"
+                    language_i18n.text("status.unknown-language")
                 }
             })
             .on_click_stop(move |_| {

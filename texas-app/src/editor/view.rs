@@ -1809,7 +1809,14 @@ fn find_view(
                         if all == 0 {
                             results_i18n.text("common.no-results")
                         } else {
-                            format!("{current} of {all}")
+                            results_i18n.text_with_args(
+                                "find.result-count",
+                                "{current} of {all}",
+                                &[
+                                    ("current", &current.to_string()),
+                                    ("all", &all.to_string()),
+                                ],
+                            )
                         }
                     }
                 })

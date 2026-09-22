@@ -284,11 +284,16 @@ impl EditorTabChild {
                         (
                             svg,
                             color,
-                            format!(
-                                "{} (Diff)",
-                                path.file_name()
-                                    .unwrap_or_default()
-                                    .to_string_lossy()
+                            i18n.text_with_args(
+                                "editor-tab.diff-title",
+                                "{path} (Diff)",
+                                &[(
+                                    "path",
+                                    &path
+                                        .file_name()
+                                        .unwrap_or_default()
+                                        .to_string_lossy(),
+                                )],
                             ),
                             is_pristine,
                         )
@@ -308,7 +313,14 @@ impl EditorTabChild {
                         (
                             svg,
                             color,
-                            format!("{left_file_name} - {right_file_name} (Diff)"),
+                            i18n.text_with_args(
+                                "editor-tab.diff-title-pair",
+                                "{left} - {right} (Diff)",
+                                &[
+                                    ("left", &left_file_name),
+                                    ("right", &right_file_name),
+                                ],
+                            ),
                             left_is_pristine && right_is_pristine,
                         )
                     }

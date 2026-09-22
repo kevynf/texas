@@ -287,7 +287,7 @@ impl TerminalData {
         let title = if let Some(profile) = &profile {
             cx.create_rw_signal(profile.name.to_owned())
         } else {
-            cx.create_rw_signal(String::from("Default"))
+            cx.create_rw_signal(common.i18n.text("terminal.default-title"))
         };
 
         let launch_error = cx.create_rw_signal(None);

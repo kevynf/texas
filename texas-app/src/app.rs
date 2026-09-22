@@ -3187,7 +3187,10 @@ pub fn launch() {
         Ok(db) => Arc::new(db),
         Err(e) => {
             #[cfg(windows)]
-            logging::error_modal("Error", &format!("Failed to create TexasDb: {e}"));
+            logging::error_modal(
+                &crate::i18n::system_text("error.title"),
+                &format!("{}: {e}", crate::i18n::system_text("error.texas-db")),
+            );
 
             trace!(TraceLevel::ERROR, "Failed to create TexasDb: {e}");
             std::process::exit(1);

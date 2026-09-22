@@ -1079,6 +1079,7 @@ impl WindowTabData {
                         editor_data.doc().content.get_untracked()
                     {
                         let window_tab = self.clone();
+                        let i18n = self.common.i18n.clone();
                         self.common.proxy.git_get_remote_file_url(
                             path,
                             create_ext_action(
@@ -1094,7 +1095,9 @@ impl WindowTabData {
                                         }
                                         Ok(_) => {}
                                         Err(err) => window_tab.show_message(
-                                            "Copy Remote File Url failure",
+                                            &i18n.text(
+                                                "message.copy-remote-url-failure",
+                                            ),
                                             &ShowMessageParams {
                                                 severity: MessageSeverity::Error,
                                                 message: err.message,
@@ -1304,6 +1307,7 @@ impl WindowTabData {
                             .buffer
                             .with_untracked(|buffer| buffer.line_of_offset(offset));
                         let window_tab = self.clone();
+                        let i18n = self.common.i18n.clone();
                         self.common.proxy.git_get_remote_file_url(
                             path,
                             create_ext_action(
@@ -1324,7 +1328,9 @@ impl WindowTabData {
                                     }
                                     Ok(_) => {}
                                     Err(err) => window_tab.show_message(
-                                        "Open Remote File Url failure",
+                                        &i18n.text(
+                                            "message.open-remote-url-failure",
+                                        ),
                                         &ShowMessageParams {
                                             severity: MessageSeverity::Error,
                                             message: err.message,
@@ -1816,7 +1822,12 @@ impl WindowTabData {
     fn handle_core_notification(&self, rpc: &CoreNotification) {
         match rpc {
             CoreNotification::DiffInfo { diff } => {
-                self.source_control.branch.set(diff.head.clone());
+                let branch = if diff.head == "(No branch)" {
+                    self.common.i18n.text("git.no-branch")
+                } else {
+                    diff.head.clone()
+                };
+                self.source_control.branch.set(branch);
                 self.source_control
                     .branches
                     .set(diff.branches.iter().cloned().collect());
