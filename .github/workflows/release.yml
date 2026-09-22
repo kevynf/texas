@@ -36,19 +36,19 @@ jobs:
         run: cargo fetch --locked
 
       - name: Build
-        run: cargo build --frozen --profile release-lto --bin lapce
+        run: cargo build --frozen --profile release-lto --bin texas
 
       - name: Create portable archive
         shell: pwsh
         run: |
-          cargo build --frozen --profile release-lto --features lapce-app/portable --bin lapce
-          Compress-Archive ./target/release-lto/lapce.exe ./Lapce-windows-portable.zip
+          cargo build --frozen --profile release-lto --features texas-app/portable --bin texas
+          Compress-Archive ./target/release-lto/texas.exe ./Texas-windows-portable.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: lapce-windows
+          name: texas-windows
           path: |
-            ./Lapce-windows-portable.zip
+            ./Texas-windows-portable.zip
           retention-days: 1
 
   publish:
@@ -71,4 +71,4 @@ jobs:
           gh release create "$RELEASE_TAG_NAME" \
             --title "$RELEASE_TAG_NAME" \
             --target "$GITHUB_SHA" \
-            lapce-windows/*
+            texas-windows/*

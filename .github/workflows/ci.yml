@@ -9,7 +9,7 @@ on:
     paths:
       - Cargo.toml
       - Cargo.lock
-      - lapce-**
+      - texas-**
       - .github/workflows/ci.yml
       - rust-toolchain.toml
   workflow_dispatch:
@@ -45,10 +45,10 @@ jobs:
         run: cargo fmt --all --check
 
       - name: Run Clippy
-        run: cargo clippy --workspace
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Build
-        run: cargo build --frozen --bin lapce
+        run: cargo build --frozen --bin texas
 
       - name: Run tests
         run: cargo test --workspace
