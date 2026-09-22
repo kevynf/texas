@@ -1,10 +1,10 @@
 #:schema ../extra/schemas/icon-theme.json
 
 [icon-theme]
-name = "Lapce Codicons"
+name = "Codicons"
 
 [icon-theme.ui]
-"logo" = "lapce_logo.svg"
+"logo" = "texas-mono.svg"
 "menu" = "menu.svg"
 "error" = "error.svg"
 "add" = "add.svg"
@@ -13,7 +13,7 @@ name = "Lapce Codicons"
 "warning" = "warning.svg"
 "settings" = "settings-gear.svg"
 "terminal" = "terminal.svg"
-"keyboard" = "keyboard.svg"
+"keyboard" = "record-keys.svg"
 "breadcrumb_separator" = "chevron-right.svg"
 "symbol_color" = "symbol-color.svg"
 
