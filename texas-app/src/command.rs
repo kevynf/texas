@@ -1,0 +1,715 @@
+use std::{path::PathBuf, rc::Rc};
+
+pub use floem::views::editor::command::CommandExecuted;
+use floem::{
+    ViewId, keyboard::Modifiers, peniko::kurbo::Vec2,
+    views::editor::command::Command,
+};
+use indexmap::IndexMap;
+use serde_json::Value;
+use strum::{EnumMessage, IntoEnumIterator};
+use strum_macros::{Display, EnumIter, EnumString, IntoStaticStr};
+use texas_core::command::{
+    EditCommand, FocusCommand, MotionModeCommand, MoveCommand,
+    MultiSelectionCommand, ScrollCommand,
+};
+use texas_rpc::terminal::{TermId, TerminalProfile};
+
+use crate::{
+    alert::AlertButton,
+    doc::Doc,
+    editor::location::EditorLocation,
+    editor_tab::EditorTabChild,
+    i18n::I18n,
+    id::EditorTabId,
+    main_split::{SplitDirection, SplitMoveDirection, TabCloseKind},
+    workspace::TexasWorkspace,
+};
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TexasCommand {
+    pub kind: CommandKind,
+    pub data: Option<Value>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CommandKind {
+    Workbench(TexasWorkbenchCommand),
+    Edit(EditCommand),
+    Move(MoveCommand),
+    Scroll(ScrollCommand),
+    Focus(FocusCommand),
+    MotionMode(MotionModeCommand),
+    MultiSelection(MultiSelectionCommand),
+}
+
+impl CommandKind {
+    pub fn desc(&self) -> Option<&'static str> {
+        match &self {
+            CommandKind::Workbench(cmd) => cmd.get_message(),
+            CommandKind::Edit(cmd) => cmd.get_message(),
+            CommandKind::Move(cmd) => cmd.get_message(),
+            CommandKind::Scroll(cmd) => cmd.get_message(),
+            CommandKind::Focus(cmd) => cmd.get_message(),
+            CommandKind::MotionMode(cmd) => cmd.get_message(),
+            CommandKind::MultiSelection(cmd) => cmd.get_message(),
+        }
+    }
+
+    pub fn str(&self) -> &'static str {
+        match &self {
+            CommandKind::Workbench(cmd) => cmd.into(),
+            CommandKind::Edit(cmd) => cmd.into(),
+            CommandKind::Move(cmd) => cmd.into(),
+            CommandKind::Scroll(cmd) => cmd.into(),
+            CommandKind::Focus(cmd) => cmd.into(),
+            CommandKind::MotionMode(cmd) => cmd.into(),
+            CommandKind::MultiSelection(cmd) => cmd.into(),
+        }
+    }
+
+    pub fn localized_desc(&self, i18n: &I18n) -> Option<String> {
+        let fallback = self
+            .desc()
+            .map(str::to_owned)
+            .unwrap_or_else(|| self.str().replace(['_', '.'], " "));
+        Some(i18n.command_text(self.str(), &fallback))
+    }
+}
+impl From<Command> for CommandKind {
+    fn from(cmd: Command) -> Self {
+        use Command::*;
+        match cmd {
+            Edit(edit) => CommandKind::Edit(edit),
+            Move(movement) => CommandKind::Move(movement),
+            Scroll(scroll) => CommandKind::Scroll(scroll),
+            MotionMode(motion_mode) => CommandKind::MotionMode(motion_mode),
+            MultiSelection(multi_selection) => {
+                CommandKind::MultiSelection(multi_selection)
+            }
+        }
+    }
+}
+
+pub fn texas_internal_commands() -> IndexMap<String, TexasCommand> {
+    let mut commands = IndexMap::new();
+
+    for c in TexasWorkbenchCommand::iter() {
+        let command = TexasCommand {
+            kind: CommandKind::Workbench(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in EditCommand::iter() {
+        let command = TexasCommand {
+            kind: CommandKind::Edit(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in MoveCommand::iter() {
+        let command = TexasCommand {
+            kind: CommandKind::Move(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in ScrollCommand::iter().filter(is_scroll_command_handled) {
+        let command = TexasCommand {
+            kind: CommandKind::Scroll(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in FocusCommand::iter().filter(is_focus_command_handled) {
+        let command = TexasCommand {
+            kind: CommandKind::Focus(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in MotionModeCommand::iter() {
+        let command = TexasCommand {
+            kind: CommandKind::MotionMode(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    for c in MultiSelectionCommand::iter() {
+        let command = TexasCommand {
+            kind: CommandKind::MultiSelection(c.clone()),
+            data: None,
+        };
+        commands.insert(c.to_string(), command);
+    }
+
+    commands
+}
+
+/// Unimplemented upstream scroll commands, hidden from the command list.
+fn is_scroll_command_handled(cmd: &ScrollCommand) -> bool {
+    !matches!(
+        cmd,
+        ScrollCommand::CenterOfWindow
+            | ScrollCommand::TopOfWindow
+            | ScrollCommand::BottomOfWindow
+    )
+}
+
+/// Focus commands from the upstream editor core that have no handler in this
+/// build: the editor features they drive (code intelligence, debugging,
+/// inline completions, snippets) were removed, and some upstream actions were
+/// never implemented here. They are hidden from the command palette and the
+/// keymap editor so no dead entries are offered.
+fn is_focus_command_handled(cmd: &FocusCommand) -> bool {
+    !matches!(
+        cmd,
+        FocusCommand::ShowCodeActions
+            | FocusCommand::GetCompletion
+            | FocusCommand::GetSignature
+            | FocusCommand::GotoDefinition
+            | FocusCommand::GotoTypeDefinition
+            | FocusCommand::ShowHover
+            | FocusCommand::Rename
+            | FocusCommand::ConfirmRename
+            | FocusCommand::ToggleCodeLens
+            | FocusCommand::ToggleHistory
+            | FocusCommand::FormatDocument
+            | FocusCommand::ToggleBreakpoint
+            | FocusCommand::InlineCompletionSelect
+            | FocusCommand::InlineCompletionNext
+            | FocusCommand::InlineCompletionPrevious
+            | FocusCommand::InlineCompletionCancel
+            | FocusCommand::InlineCompletionInvoke
+            | FocusCommand::JumpToNextSnippetPlaceholder
+            | FocusCommand::JumpToPrevSnippetPlaceholder
+            | FocusCommand::NextDiff
+            | FocusCommand::PreviousDiff
+            | FocusCommand::CreateMark
+            | FocusCommand::GoToMark
+            | FocusCommand::SelectNextSyntaxItem
+            | FocusCommand::SelectPreviousSyntaxItem
+            | FocusCommand::ToggleCaseSensitive
+            | FocusCommand::GlobalSearchRefresh
+            | FocusCommand::SearchInView
+            | FocusCommand::ListExpand
+            | FocusCommand::SaveAndExit
+            | FocusCommand::ForceExit
+            | FocusCommand::OpenSourceFile
+    )
+}
+
+#[derive(
+    Display,
+    EnumString,
+    EnumIter,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    EnumMessage,
+    IntoStaticStr,
+)]
+pub enum TexasWorkbenchCommand {
+    #[strum(serialize = "enable_modal_editing")]
+    #[strum(message = "Enable Modal Editing")]
+    EnableModal,
+
+    #[strum(serialize = "disable_modal_editing")]
+    #[strum(message = "Disable Modal Editing")]
+    DisableModal,
+
+    #[strum(serialize = "open_folder")]
+    #[strum(message = "Open Folder")]
+    OpenFolder,
+
+    #[strum(serialize = "close_folder")]
+    #[strum(message = "Close Folder")]
+    CloseFolder,
+
+    #[strum(serialize = "open_file")]
+    #[strum(message = "Open File")]
+    OpenFile,
+
+    #[strum(serialize = "reveal_in_panel")]
+    #[strum(message = "Reveal in Panel")]
+    RevealInPanel,
+
+    #[strum(serialize = "source_control_open_active_file_remote_url")]
+    #[strum(message = "Source Control: Open Remote File Url")]
+    SourceControlOpenActiveFileRemoteUrl,
+
+    #[strum(serialize = "reveal_in_file_explorer")]
+    #[strum(message = "Reveal in System File Explorer")]
+    RevealInFileExplorer,
+
+    #[strum(serialize = "reveal_active_file_in_file_explorer")]
+    #[strum(message = "Reveal Active File in File Explorer")]
+    RevealActiveFileInFileExplorer,
+
+    #[strum(serialize = "open_ui_inspector")]
+    #[strum(message = "Open Internal UI Inspector")]
+    OpenUIInspector,
+
+    #[strum(serialize = "show_env")]
+    #[strum(message = "Show Environment")]
+    ShowEnvironment,
+
+    #[strum(serialize = "change_color_theme")]
+    #[strum(message = "Change Color Theme")]
+    ChangeColorTheme,
+
+    #[strum(serialize = "change_icon_theme")]
+    #[strum(message = "Change Icon Theme")]
+    ChangeIconTheme,
+
+    #[strum(serialize = "open_settings")]
+    #[strum(message = "Open Settings")]
+    OpenSettings,
+
+    #[strum(serialize = "open_settings_file")]
+    #[strum(message = "Open Settings File")]
+    OpenSettingsFile,
+
+    #[strum(serialize = "open_settings_directory")]
+    #[strum(message = "Open Settings Directory")]
+    OpenSettingsDirectory,
+
+    #[strum(serialize = "open_theme_color_settings")]
+    #[strum(message = "Open Theme Color Settings")]
+    OpenThemeColorSettings,
+
+    #[strum(serialize = "open_keyboard_shortcuts")]
+    #[strum(message = "Open Keyboard Shortcuts")]
+    OpenKeyboardShortcuts,
+
+    #[strum(serialize = "open_keyboard_shortcuts_file")]
+    #[strum(message = "Open Keyboard Shortcuts File")]
+    OpenKeyboardShortcutsFile,
+
+    #[strum(serialize = "open_log_file")]
+    #[strum(message = "Open Log File")]
+    OpenLogFile,
+
+    #[strum(serialize = "open_logs_directory")]
+    #[strum(message = "Open Logs Directory")]
+    OpenLogsDirectory,
+
+    #[strum(serialize = "open_themes_directory")]
+    #[strum(message = "Open Themes Directory")]
+    OpenThemesDirectory,
+
+    #[strum(serialize = "open_grammars_directory")]
+    #[strum(message = "Open Grammars Directory")]
+    OpenGrammarsDirectory,
+
+    #[strum(serialize = "open_queries_directory")]
+    #[strum(message = "Open Queries Directory")]
+    OpenQueriesDirectory,
+
+    #[strum(serialize = "zoom_in")]
+    #[strum(message = "Zoom In")]
+    ZoomIn,
+
+    #[strum(serialize = "zoom_out")]
+    #[strum(message = "Zoom Out")]
+    ZoomOut,
+
+    #[strum(serialize = "zoom_reset")]
+    #[strum(message = "Reset Zoom")]
+    ZoomReset,
+
+    #[strum(serialize = "close_window_tab")]
+    #[strum(message = "Close Current Window Tab")]
+    CloseWindowTab,
+
+    #[strum(serialize = "new_window_tab")]
+    #[strum(message = "Create New Window Tab")]
+    NewWindowTab,
+
+    #[strum(serialize = "new_terminal_tab")]
+    #[strum(message = "Create New Terminal Tab")]
+    NewTerminalTab,
+
+    #[strum(serialize = "close_terminal_tab")]
+    #[strum(message = "Close Terminal Tab")]
+    CloseTerminalTab,
+
+    #[strum(serialize = "next_terminal_tab")]
+    #[strum(message = "Next Terminal Tab")]
+    NextTerminalTab,
+
+    #[strum(serialize = "previous_terminal_tab")]
+    #[strum(message = "Previous Terminal Tab")]
+    PreviousTerminalTab,
+
+    #[strum(serialize = "next_window_tab")]
+    #[strum(message = "Go To Next Window Tab")]
+    NextWindowTab,
+
+    #[strum(serialize = "previous_window_tab")]
+    #[strum(message = "Go To Previous Window Tab")]
+    PreviousWindowTab,
+
+    #[strum(serialize = "reload_window")]
+    #[strum(message = "Reload Window")]
+    ReloadWindow,
+
+    #[strum(message = "New Window")]
+    #[strum(serialize = "new_window")]
+    NewWindow,
+
+    #[strum(message = "Close Window")]
+    #[strum(serialize = "close_window")]
+    CloseWindow,
+
+    #[strum(message = "New File")]
+    #[strum(serialize = "new_file")]
+    NewFile,
+
+    #[strum(message = "Go To Line")]
+    #[strum(serialize = "palette.line")]
+    PaletteLine,
+
+    #[strum(serialize = "palette")]
+    #[strum(message = "Go to File")]
+    Palette,
+
+    #[strum(message = "Command Palette")]
+    #[strum(serialize = "palette.command")]
+    PaletteCommand,
+
+    #[strum(message = "Open Recent Workspace")]
+    #[strum(serialize = "palette.workspace")]
+    PaletteWorkspace,
+
+    #[strum(message = "Source Control: Checkout")]
+    #[strum(serialize = "palette.scm_references")]
+    PaletteSCMReferences,
+
+    #[strum(message = "List Palette Types")]
+    #[strum(serialize = "palette.palette_help")]
+    PaletteHelp,
+
+    #[strum(message = "List Palette Types and Files")]
+    #[strum(serialize = "palette.palette_help_and_file")]
+    PaletteHelpAndFile,
+
+    #[strum(serialize = "source_control.checkout_reference")]
+    CheckoutReference,
+
+    #[strum(serialize = "toggle_maximized_panel")]
+    ToggleMaximizedPanel,
+
+    #[strum(serialize = "hide_panel")]
+    HidePanel,
+
+    #[strum(serialize = "show_panel")]
+    ShowPanel,
+
+    /// Toggles the panel passed in parameter.
+    #[strum(serialize = "toggle_panel_focus")]
+    TogglePanelFocus,
+
+    /// Toggles the panel passed in parameter.
+    #[strum(serialize = "toggle_panel_visual")]
+    TogglePanelVisual,
+
+    #[strum(message = "Toggle Left Panel")]
+    #[strum(serialize = "toggle_panel_left_visual")]
+    TogglePanelLeftVisual,
+
+    #[strum(message = "Toggle Right Panel")]
+    #[strum(serialize = "toggle_panel_right_visual")]
+    TogglePanelRightVisual,
+
+    #[strum(message = "Toggle Bottom Panel")]
+    #[strum(serialize = "toggle_panel_bottom_visual")]
+    TogglePanelBottomVisual,
+
+    // Focus toggle commands
+    #[strum(message = "Toggle Terminal Focus")]
+    #[strum(serialize = "toggle_terminal_focus")]
+    ToggleTerminalFocus,
+
+    #[strum(serialize = "toggle_source_control_focus")]
+    ToggleSourceControlFocus,
+
+    #[strum(message = "Toggle File Explorer Focus")]
+    #[strum(serialize = "toggle_file_explorer_focus")]
+    ToggleFileExplorerFocus,
+
+    #[strum(message = "Toggle Search Focus")]
+    #[strum(serialize = "toggle_search_focus")]
+    ToggleSearchFocus,
+
+    // Visual toggle commands
+    #[strum(serialize = "toggle_terminal_visual")]
+    ToggleTerminalVisual,
+
+    #[strum(serialize = "toggle_source_control_visual")]
+    ToggleSourceControlVisual,
+
+    #[strum(serialize = "toggle_file_explorer_visual")]
+    ToggleFileExplorerVisual,
+
+    #[strum(serialize = "toggle_search_visual")]
+    ToggleSearchVisual,
+
+    #[strum(serialize = "focus_editor")]
+    FocusEditor,
+
+    #[strum(serialize = "focus_terminal")]
+    FocusTerminal,
+
+    #[strum(message = "Source Control: Init")]
+    #[strum(serialize = "source_control_init")]
+    SourceControlInit,
+
+    #[strum(serialize = "source_control_commit")]
+    SourceControlCommit,
+
+    #[strum(message = "Source Control: Copy Remote File Url")]
+    #[strum(serialize = "source_control_copy_active_file_remote_url")]
+    SourceControlCopyActiveFileRemoteUrl,
+
+    #[strum(message = "Source Control: Discard File Changes")]
+    #[strum(serialize = "source_control_discard_active_file_changes")]
+    SourceControlDiscardActiveFileChanges,
+
+    #[strum(serialize = "source_control_discard_target_file_changes")]
+    SourceControlDiscardTargetFileChanges,
+
+    #[strum(message = "Source Control: Discard Workspace Changes")]
+    #[strum(serialize = "source_control_discard_workspace_changes")]
+    SourceControlDiscardWorkspaceChanges,
+
+    #[strum(serialize = "export_current_theme_settings")]
+    #[strum(message = "Export current settings to a theme file")]
+    ExportCurrentThemeSettings,
+
+    #[strum(serialize = "change_file_language")]
+    #[strum(message = "Change current file language")]
+    ChangeFileLanguage,
+
+    #[strum(serialize = "change_file_line_ending")]
+    #[strum(message = "Change current file line ending")]
+    ChangeFileLineEnding,
+
+    #[strum(serialize = "next_editor_tab")]
+    #[strum(message = "Next Editor Tab")]
+    NextEditorTab,
+
+    #[strum(serialize = "previous_editor_tab")]
+    #[strum(message = "Previous Editor Tab")]
+    PreviousEditorTab,
+
+    #[strum(serialize = "restart_to_update")]
+    RestartToUpdate,
+
+    #[strum(serialize = "show_about")]
+    #[strum(message = "About Texas")]
+    ShowAbout,
+
+    #[strum(message = "Save All Files")]
+    #[strum(serialize = "save_all")]
+    SaveAll,
+
+    #[strum(serialize = "jump_location_backward")]
+    JumpLocationBackward,
+
+    #[strum(serialize = "jump_location_forward")]
+    JumpLocationForward,
+
+    #[strum(serialize = "jump_location_backward_local")]
+    JumpLocationBackwardLocal,
+
+    #[strum(serialize = "jump_location_forward_local")]
+    JumpLocationForwardLocal,
+
+    #[strum(message = "Diff Files")]
+    #[strum(serialize = "diff_files")]
+    DiffFiles,
+
+    #[strum(serialize = "quit")]
+    #[strum(message = "Quit Editor")]
+    Quit,
+
+    #[strum(serialize = "go_to_location")]
+    #[strum(message = "Go to Location")]
+    GoToLocation,
+}
+
+#[derive(Clone, Debug)]
+pub enum InternalCommand {
+    ReloadConfig,
+    OpenFile {
+        path: PathBuf,
+    },
+    OpenAndConfirmedFile {
+        path: PathBuf,
+    },
+    OpenFileInNewTab {
+        path: PathBuf,
+    },
+    MakeConfirmed,
+    OpenFileChanges {
+        path: PathBuf,
+    },
+    ReloadFileExplorer,
+    /// Test whether a file/directory can be created at that path
+    TestPathCreation {
+        new_path: PathBuf,
+    },
+    FinishRenamePath {
+        current_path: PathBuf,
+        new_path: PathBuf,
+    },
+    FinishNewNode {
+        is_dir: bool,
+        path: PathBuf,
+    },
+    FinishDuplicate {
+        source: PathBuf,
+        path: PathBuf,
+    },
+    GoToLocation {
+        location: EditorLocation,
+    },
+    JumpToLocation {
+        location: EditorLocation,
+    },
+    SaveJumpLocation {
+        path: PathBuf,
+        offset: usize,
+        scroll_offset: Vec2,
+    },
+    Split {
+        direction: SplitDirection,
+        editor_tab_id: EditorTabId,
+    },
+    SplitMove {
+        direction: SplitMoveDirection,
+        editor_tab_id: EditorTabId,
+    },
+    SplitExchange {
+        editor_tab_id: EditorTabId,
+    },
+    NewTerminal {
+        profile: Option<TerminalProfile>,
+    },
+    SplitTerminal {
+        term_id: TermId,
+    },
+    SplitTerminalPrevious {
+        term_id: TermId,
+    },
+    SplitTerminalNext {
+        term_id: TermId,
+    },
+    SplitTerminalExchange {
+        term_id: TermId,
+    },
+    EditorTabClose {
+        editor_tab_id: EditorTabId,
+    },
+    EditorTabChildClose {
+        editor_tab_id: EditorTabId,
+        child: EditorTabChild,
+    },
+    EditorTabCloseByKind {
+        editor_tab_id: EditorTabId,
+        child: EditorTabChild,
+        kind: TabCloseKind,
+    },
+    Search {
+        pattern: Option<String>,
+    },
+    FindEditorReceiveChar {
+        s: String,
+    },
+    ReplaceEditorReceiveChar {
+        s: String,
+    },
+    FindEditorCommand {
+        command: TexasCommand,
+        count: Option<usize>,
+        mods: Modifiers,
+    },
+    ReplaceEditorCommand {
+        command: TexasCommand,
+        count: Option<usize>,
+        mods: Modifiers,
+    },
+    FocusEditorTab {
+        editor_tab_id: EditorTabId,
+    },
+
+    SetColorTheme {
+        name: String,
+        /// Whether to save the theme to the config file
+        save: bool,
+    },
+    SetIconTheme {
+        name: String,
+        /// Whether to save the theme to the config file
+        save: bool,
+    },
+    SetModal {
+        modal: bool,
+    },
+    OpenWebUri {
+        uri: String,
+    },
+    ShowAlert {
+        title: String,
+        msg: String,
+        buttons: Vec<AlertButton>,
+    },
+    HideAlert,
+    SaveScratchDoc {
+        doc: Rc<Doc>,
+    },
+    SaveScratchDoc2 {
+        doc: Rc<Doc>,
+    },
+    ResetBlinkCursor,
+    OpenDiffFiles {
+        left_path: PathBuf,
+        right_path: PathBuf,
+    },
+    ExecuteProcess {
+        program: String,
+        arguments: Vec<String>,
+    },
+    ClearTerminalBuffer {
+        view_id: ViewId,
+        tab_index: usize,
+        terminal_index: usize,
+    },
+}
+
+#[derive(Clone)]
+pub enum WindowCommand {
+    SetWorkspace {
+        workspace: TexasWorkspace,
+    },
+    CloseWorkspaceTab {
+        index: Option<usize>,
+    },
+    NewWorkspaceTab {
+        workspace: TexasWorkspace,
+        end: bool,
+    },
+    NextWorkspaceTab,
+    PreviousWorkspaceTab,
+    NewWindow,
+    CloseWindow,
+}

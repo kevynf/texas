@@ -2,14 +2,14 @@
 
 [core]
 modal = false
-color-theme = "Lapce Dark"
-icon-theme = "Lapce Codicons"
+color-theme = "Texas Dark"
+icon-theme = "Texas Codicons"
 custom-titlebar = true
 file-explorer-double-click = false
 
 [editor]
-font-family = "monospace"
-font-size = 13
+font-family = "Cascadia Mono, Consolas, 'Courier New', monospace"
+font-size = 14
 line-height = 1.5
 smart-tab = true
 tab-width = 4
@@ -61,7 +61,7 @@ default = {}
 language = "auto"
 scale = +1.0
 font-family = ""
-font-size = 13
+font-size = 14
 icon-size = 0
 header-height = 36
 status-height = 25

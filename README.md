@@ -1,60 +1,56 @@
 <h1 align="center">
-  <a href="https://lapce.dev" target="_blank">
-  <img src="extra/images/logo.png" width=200 height=200/><br>
-  Lapce
-  </a>
+  <img src="icons/texas/texas.svg" width=200 height=200/><br>
+  Texas
 </h1>
 
-<h4 align="center">Lightning-fast And Powerful Code Editor</h4>
+<h4 align="center">轻量级代码编辑器</h4>
 
-<div align="center">
-  <a href="https://github.com/lapce/lapce/actions/workflows/ci.yml" target="_blank">
-    <img src="https://github.com/lapce/lapce/actions/workflows/ci.yml/badge.svg" />
+<p align="center">
+  中文 | <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/kevynf/texas/actions/workflows/ci.yml">
+    <img src="https://github.com/kevynf/texas/actions/workflows/ci.yml/badge.svg?branch=master" alt="CI" />
   </a>
-  <a href="https://discord.gg/n8tGJ6Rn6D" target="_blank">
-    <img src="https://img.shields.io/discord/946858761413328946?logo=discord" />
+  <a href="https://github.com/kevynf/texas/blob/master/LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache-2.0 license" />
   </a>
-  <a href="https://docs.lapce.dev" target="_blank">
-      <img src="https://img.shields.io/static/v1?label=Docs&message=docs.lapce.dev&color=blue" alt="Lapce Docs">
-  </a>
-</div>
+</p>
+
 <br/>
 
+Texas 是一个基于 Lapce 特化开发、与特定 coding harness 解耦的轻量级代码编辑器，采用 Rust、[Floem](https://github.com/lapce/floem) 及其编辑器核心组件构建，提供文件浏览、基础编辑、语法高亮、Git 集成、内置终端，以及英文和简体中文界面。
 
-Lapce (IPA: /læps/) is written in pure Rust, with a UI in [Floem](https://github.com/lapce/floem). It is designed with [Rope Science](https://xi-editor.io/docs/rope_science_00.html) from the [Xi-Editor](https://github.com/xi-editor/xi-editor), enabling lightning-fast computation, and leverages [wgpu](https://github.com/gfx-rs/wgpu) for rendering. More information about the features of Lapce can be found on the [main website](https://lapce.dev) and user documentation can be found on [GitBook](https://docs.lapce.dev/).
+面向 vibe coding 时代，Texas 将持续迭代，致力于成为一个启动迅速、与特定 coding harness 解耦，并专注于代码阅读与变更审查的轻量级代码编辑器。
 
-![](https://github.com/lapce/lapce/blob/master/extra/images/screenshot.png?raw=true)
+## 特性
 
-## Features
+* 基于 Tree-sitter 的语法高亮
+* 模态编辑支持（类 Vim，可切换）
+* 内置终端
+* Git 集成，支持查看和提交变更
+* 界面国际化（英文和简体中文）
 
-* Syntax highlighting via Tree-sitter
-* Modal editing support as first class citizen (Vim-like, and toggleable)
-* Built-in terminal, so you can execute commands in your workspace, without leaving Lapce.
-* Git integration for viewing and committing changes.
+## 从源码构建
 
-## Installation
+使用 [`rustup.rs`](https://rustup.rs/) 安装 Rust（最低版本 1.87），然后：
 
-You can find pre-built Windows releases [here](https://github.com/lapce/lapce/releases), or read about [installing with a package manager](docs/installing-with-package-manager.md).
-If you'd like to compile from source, you can find the [guide](docs/building-from-source.md).
+```sh
+cargo build --frozen --bin texas
+```
 
-## Contributing
+各平台的系统依赖详见 [docs/building-from-source.md](docs/building-from-source.md)。
 
-<a href="https://ws.lap.dev/#https://github.com/lapce/lapce" target="_blank">
-      <img src="https://lap.dev/images/open-in-lapdev.svg?version=8" alt="Open in Lapdev">
-</a>
+Windows 发布目前提供便携版 ZIP。构建、测试和发布说明见
+[docs/building-from-source.md](docs/building-from-source.md)。国际化实现说明见
+[docs/i18n.md](docs/i18n.md)。
 
-[Lapdev](https://lap.dev/), developed by the Lapce team, is a cloud dev env service similar to GitHub Codespaces. By clicking the button above, you'll be taken to a fully set up Lapce dev env where you can browse the code and start developing. All dependencies are pre-installed, so you can get straight to code.
+## 贡献
 
-Guidelines for contributing to Lapce can be found in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解贡献指南。
 
-## Feedback & Contact
+## 许可证
 
-The most popular place for Lapce developers and users is on the [Discord server](https://discord.gg/n8tGJ6Rn6D).
-
-Or, join the discussion on [Reddit](https://www.reddit.com/r/lapce/) where we are just getting started.
-
-There is also a [Matrix Space](https://matrix.to/#/#lapce-editor:matrix.org), which is linked to the content from the Discord server.
-
-## License
-
-Lapce is released under the Apache License Version 2, which is an open source license. You may contribute to this project, or use the code as you please as long as you adhere to its conditions. You can find a copy of the license text here: [`LICENSE`](LICENSE).
+Texas 基于 Apache License Version 2.0 发布。许可证文本见 [`LICENSE`](LICENSE)，
+上游代码和第三方资源归属见 [`NOTICE`](NOTICE)。

@@ -1,29 +1,36 @@
 [package]
-name         = "lapce"
+name         = "texas"
 version      = { workspace = true }
-authors      = { workspace = true }
+description  = { workspace = true }
 edition      = { workspace = true }
 license      = { workspace = true }
 rust-version = { workspace = true }
-default-run  = "lapce"
+default-run  = "texas"
 
 [dependencies]
-lapce-app = { path = "./lapce-app" }
+texas-app = { path = "./texas-app" }
+
+[target.'cfg(windows)'.build-dependencies]
+image = { version = "0.25.1", default-features = false, features = ["ico", "png"] }
+resvg = "0.45.1"
+tiny-skia = "0.11"
+winres = "0.1.12"
 
 [[bin]]
-name = "lapce"
-path = "lapce-app/src/bin/lapce.rs"
+name = "texas"
+path = "texas-app/src/bin/texas.rs"
 
 [workspace]
-members = ["lapce-app", "lapce-proxy", "lapce-rpc", "lapce-core"]
+members = ["texas-app", "texas-proxy", "texas-rpc", "texas-core"]
 
 [workspace.package]
-version      = "0.4.6"
+ version      = "0.1.0"
+description  = "A lightweight code editor with Git integration, a built-in terminal, and English and Simplified Chinese UI support."
 edition      = "2024"
 rust-version = "1.87.0"
 license      = "Apache-2.0"
-homepage     = "https://lapce.dev"
-authors      = ["Dongdong Zhou <dzhou121@gmail.com>"]
+homepage     = "https://github.com/kevynf/texas"
+repository   = "https://github.com/kevynf/texas"
 
 [workspace.dependencies]
 anyhow            = { version = "1.0" }
@@ -34,7 +41,6 @@ clap              = { version = "4.5.0", default-features = false, features = ["
 cosmic-text       = { version = "0.14.2", features = ["monospace_fallback"] }
 crossbeam-channel = { version = "0.5.12" }
 directories       = { version = "4.0.1" }
-flate2            = { version = "1.0" }
 git2              = { version = "0.20.0", features = ["vendored-openssl"] }
 globset           = { version = "0.4.14" }
 im                = { version = "15.0.0", features = ["serde"] }
@@ -65,9 +71,9 @@ zstd              = { version = "0.11.2" }
 
 lapce-xi-rope = { version = "0.3.2", features = ["serde"] }
 
-lapce-core  = { path = "./lapce-core" }
-lapce-rpc   = { path = "./lapce-rpc" }
-lapce-proxy = { path = "./lapce-proxy" }
+texas-core  = { path = "./texas-core" }
+texas-rpc   = { path = "./texas-rpc" }
+texas-proxy = { path = "./texas-proxy" }
 
 floem = { git = "https://github.com/lapce/floem", rev = "e0dd862564e3afbad5cba8ebe60df166a7a41e56", features = ["editor", "serde", "default-image-formats", "rfd-async-std"] }
 # floem = { path = "../floem", features = ["editor", "serde", "default-image-formats", "rfd-async-std"] }
@@ -109,13 +115,13 @@ lto           = true
 codegen-units = 1
 
 # A profile which compiles all (non-workspace) dependencies in release mode
-# but Lapce code in dev mode. This gives a good debugging experience for your
+# but Texas code in dev mode. This gives a good debugging experience for your
 # code and fast performance of other people's code. After the initial
 # build subsequent ones are as fast as dev mode builds.
 # See https://doc.rust-lang.org/cargo/reference/profiles.html
 # To use this profile:
 #   cargo build --profile fastdev
-#   cargo run --profile fastdev --bin lapce
+#   cargo run --profile fastdev --bin texas
 [profile.fastdev.package."*"]
 opt-level = 3
 

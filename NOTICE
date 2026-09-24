@@ -1,0 +1,42 @@
+Third-party attribution notices for Texas
+=========================================
+
+This file records attribution notices for third-party and derived material
+distributed with Texas. The Texas source code is licensed separately under the
+Apache License, Version 2.0; see LICENSE.
+
+Lapce
+-----
+
+Texas contains code derived from Lapce.
+Copyright 2020-2024 Dongdong Zhou and Lapce contributors.
+Licensed under the Apache License, Version 2.0.
+https://github.com/lapce/lapce
+
+Codicons
+--------
+
+Copyright Microsoft Corporation.
+Licensed under the Creative Commons Attribution 4.0 International License.
+https://github.com/microsoft/vscode-codicons
+
+Visual Studio Code default themes
+---------------------------------
+
+Copyright Microsoft Corporation.
+Licensed under the MIT License.
+https://github.com/microsoft/vscode
+
+Texas logo
+----------
+
+The Texas logo is modified from “Perpendicular Rings” by Lorc.
+Licensed under the Creative Commons Attribution 3.0 License.
+https://github.com/pottejd/game-icons
+
+Cascadia Mono
+-------------
+
+Copyright (c) 2019-present Microsoft Corporation.
+Licensed under the SIL Open Font License, Version 1.1.
+https://github.com/microsoft/cascadia-code
