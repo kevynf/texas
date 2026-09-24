@@ -1,44 +1,56 @@
 # Repository Guidelines
 
-## Build and verification
+## Project Structure & Module Organization
 
-- Run Cargo commands from the repository root. `rust-toolchain.toml` tracks **stable**; Rust 1.87 is the manifest minimum, not a pinned toolchain.
-- Fetch before a frozen build on a fresh checkout. Floem/editor-core and several other dependencies are Git-revision-pinned; preserve those pins and `Cargo.lock` unless changing dependencies intentionally.
-- CI runs on Windows. Match `.github/workflows/ci.yml` (its Clippy flags are stricter than the build docs):
+Texas is a Rust 2024 workspace. `texas-app/` contains the Floem UI and the
+`texas` binary entry point; `texas-core/` owns editor primitives, syntax, and
+encoding; `texas-proxy/` handles filesystem, terminal, and dispatch work; and
+`texas-rpc/` defines messages shared across those boundaries. Default settings
+and themes live in `defaults/`, application translations in
+`texas-app/assets/locales/`, icons in `icons/`, schemas in `extra/schemas/`, and
+maintainer documentation in `docs/`. Tests normally sit beside the Rust module
+inside `#[cfg(test)] mod tests`; benchmarks are under `texas-app/benches/`.
+
+## Build, Test, and Development Commands
+
+Run commands from the repository root with the stable toolchain (Rust 1.87 or
+newer):
 
 ```sh
-cargo fetch --locked
-cargo fmt --all --check
+cargo run --profile fastdev --bin texas      # run a responsive development build
+cargo build --frozen --bin texas             # build with the committed lockfile
+cargo fmt --all --check                      # verify rustfmt (85-column limit)
 cargo clippy --workspace --all-targets -- -D warnings
-cargo build --frozen --bin texas
-cargo test --workspace
+cargo test --workspace                       # run every crate's tests
 ```
 
-- Use `--workspace` for full checks: plain `cargo test` at this root selects the root package, not all library tests.
-- Development: `cargo run --profile fastdev --bin texas`. `fastdev` optimizes dependencies while keeping workspace code in dev mode.
-- Focused tests: `cargo test -p texas-core --lib`; single test: `cargo test -p texas-core --lib lens::tests::test_lens_metric -- --exact`.
-- UI translation checks: `cargo test -p texas-app --lib i18n::tests`. Visual-line performance: `cargo bench -p texas-app --bench visual_line`.
-- Rustfmt uses an 85-column limit; manifest TOML formatting follows `.taplo.toml`. Linux system packages are listed in `docs/building-from-source.en.md`.
+Use focused commands while iterating, such as `cargo test -p texas-core --lib`.
+Platform prerequisites and release builds are documented in
+`docs/building-from-source.en.md`.
 
-## Wiring and build gotchas
+## Coding Style & Naming Conventions
 
-- The workspace has the root `texas` package plus four library packages. The root binary points to `texas-app/src/bin/texas.rs`, which calls `texas_app::app::launch()`; CLI parsing and startup live in `texas-app/src/app.rs`.
-- Cargo also auto-discovers that binary under `texas-app`. Build the **root** package for the shipped executable (`cargo build --frozen --bin texas`, or explicitly `-p texas`): root `build.rs` embeds the Windows icon generated from `icons/texas/texas.svg`.
-- `texas-app/src/proxy.rs` starts the local `texas-proxy::dispatch::Dispatcher` and RPC handlers on threads in the UI process. Follow `texas-rpc` request/notification types when tracing file, Git, watcher, or terminal operations.
-- `texas-core/src/lib.rs` re-exports `floem_editor_core::*`; many editor primitives used through `texas_core` are implemented in the pinned upstream dependency. Local core code handles syntax, language metadata, encoding, and application directories.
-- `texas-core/build.rs` generates `OUT_DIR/meta.rs`. A `RELEASE_TAG_NAME` beginning with `v` selects Stable; otherwise builds use Debug/Nightly metadata. This also affects application data directory names via `texas-core/src/directory.rs`.
-- Windows MSVC builds statically link the CRT via `.cargo/config.toml`. Portable builds use `cargo build --frozen --profile release-lto --features texas-app/portable --bin texas`; their data lives under `texas-data` beside the executable.
-- Keep settings structs in `texas-app/src/config/` aligned with embedded `defaults/settings.toml`: missing or misnamed required fields can panic during default configuration loading.
-- Keep the apparently unused `cosmic-text` dependency in `texas-app/Cargo.toml`: it enables `monospace_fallback` for Floem's shared text stack and CJK rendering.
+Accept `rustfmt` output; use four-space indentation and do not align code by
+hand. Follow Rust naming conventions: `snake_case` for modules and functions,
+`UpperCamelCase` for types and traits, and `SCREAMING_SNAKE_CASE` for constants.
+Keep crate boundaries intact and reuse workspace dependencies from the root
+`Cargo.toml`. Format TOML according to `.taplo.toml`. When changing UI text,
+update both `en.toml` and `zh-CN.toml` with matching keys and placeholders.
 
-## UI text and documentation
+## Testing Guidelines
 
-- Use `CommonData.i18n`, not Floem's runtime-global context: workspace tabs can have different language settings. Use reactive producers such as `label(i18n.text_signal("key"))` to update text on language changes.
-- Add UI keys to both `texas-app/assets/locales/en.toml` and `zh-CN.toml`, with matching placeholders. Command and settings changes also require locale entries; `texas-app/src/i18n.rs` tests enforce coverage.
-- Treat `texas-app/src/i18n.rs` as authoritative when consulting `docs/i18n.md`: proxy messages are currently plain strings, and `text_with_args` takes an explicit fallback argument. The literal-key test only scans `text` and `text_signal` calls.
-- Keep paired Chinese/English READMEs, contribution guides, and build docs in sync (`CONTRIBUTING.en.md`).
+Add unit tests near the behavior they cover and give tests descriptive
+`snake_case` names. Run the affected crate first, then `cargo test --workspace`.
+Localization and configuration changes must retain the consistency checks in
+`texas-app/src/i18n.rs`. No numeric coverage threshold is configured; prioritize
+regression tests for parsing, state transitions, and cross-crate messages.
 
-## Contribution constraints
+## Commit & Pull Request Guidelines
 
-- Inspect status and the full diff before editing or submitting; preserve unrelated work. Do not push, create/merge PRs, or delete remote branches without explicit authorization.
-- Use Conventional Commit-style titles and `.github/PULL_REQUEST_TEMPLATE.md` (scope/non-goals, actual validation, risks/follow-ups). Distinguish local checks from CI results; report only checks actually run.
+Recent history uses Conventional Commit subjects, commonly `feat:`, `fix:`,
+`refactor:`, `style:`, `build:`, and `chore:`, followed by concise Chinese text.
+Keep each commit to one logical change. Pull requests should follow
+`.github/PULL_REQUEST_TEMPLATE.md`: summarize the change, state scope and
+non-goals, list only validation actually run, and note risks or follow-up work.
+Link relevant issues and include screenshots for visible UI changes. Keep paired
+Chinese and English documentation synchronized.
