@@ -9,7 +9,6 @@ use floem::{
         ReadSignal, RwSignal, SignalGet, SignalUpdate, SignalWith, create_rw_signal,
     },
     style::{AlignItems, CursorStyle, Position, Style},
-    text::Style as FontStyle,
     views::{
         Container, Decorators, container, dyn_stack, label, scroll, stack, svg,
         virtual_stack,
@@ -514,17 +513,10 @@ fn open_editors_view(window_tab_data: Rc<WindowTabData>) -> impl View {
             let child_for_close = child.clone();
             let info =
                 child.view_info(editors, diff_editors, config, child_i18n.clone());
-            let hovered = create_rw_signal(false);
 
             stack((
                 clickable_icon(
-                    move || {
-                        if hovered.get() || info.with(|info| info.is_pristine) {
-                            TexasIcons::CLOSE
-                        } else {
-                            TexasIcons::UNSAVED
-                        }
-                    },
+                    || TexasIcons::CLOSE,
                     move || {
                         let editor_tab_id =
                             editor_tab.with_untracked(|t| t.editor_tab_id);
@@ -540,12 +532,6 @@ fn open_editors_view(window_tab_data: Rc<WindowTabData>) -> impl View {
                     window_tab_data.common.i18n.text_signal("common.close"),
                     config,
                 )
-                .on_event_stop(EventListener::PointerEnter, move |_| {
-                    hovered.set(true);
-                })
-                .on_event_stop(EventListener::PointerLeave, move |_| {
-                    hovered.set(false);
-                })
                 .on_event_stop(EventListener::PointerDown, |_| {})
                 .style(|s| s.margin_left(10.0)),
                 container(svg(move || info.with(|info| info.icon.clone())).style(
@@ -558,15 +544,7 @@ fn open_editors_view(window_tab_data: Rc<WindowTabData>) -> impl View {
                     },
                 ))
                 .style(|s| s.padding_horiz(6.0)),
-                label(move || info.with(|info| info.name.clone())).style(move |s| {
-                    s.apply_if(
-                        !info
-                            .with(|info| info.confirmed)
-                            .map(|confirmed| confirmed.get())
-                            .unwrap_or(true),
-                        |s| s.font_style(FontStyle::Italic),
-                    )
-                }),
+                label(move || info.with(|info| info.name.clone())),
             ))
             .style(move |s| {
                 let config = config.get();

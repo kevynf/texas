@@ -11,7 +11,7 @@ use floem::{
     },
     reactive::{
         Memo, ReadSignal, RwSignal, Scope, SignalGet, SignalUpdate, SignalWith,
-        create_memo, create_rw_signal,
+        create_memo,
     },
     views::editor::id::EditorId,
 };
@@ -142,8 +142,48 @@ pub struct EditorTabChildViewInfo {
     pub color: Option<Color>,
     pub name: String,
     pub path: Option<PathBuf>,
-    pub confirmed: Option<RwSignal<bool>>,
-    pub is_pristine: bool,
+    pub status: Option<EditorTabStatus>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EditorTabStatus {
+    Modified,
+    ReadOnly,
+    Preview,
+}
+
+impl EditorTabStatus {
+    fn resolve(
+        is_pristine: bool,
+        read_only: bool,
+        confirmed: Option<bool>,
+    ) -> Option<Self> {
+        if !is_pristine {
+            Some(Self::Modified)
+        } else if read_only {
+            Some(Self::ReadOnly)
+        } else if confirmed == Some(false) {
+            Some(Self::Preview)
+        } else {
+            None
+        }
+    }
+
+    pub fn icon(self) -> &'static str {
+        match self {
+            Self::Modified => TexasIcons::TAB_MODIFIED,
+            Self::ReadOnly => TexasIcons::TAB_READ_ONLY,
+            Self::Preview => TexasIcons::TAB_PREVIEW,
+        }
+    }
+
+    pub fn i18n_key(self) -> &'static str {
+        match self {
+            Self::Modified => "editor-tab.status.modified",
+            Self::ReadOnly => "editor-tab.status.read-only",
+            Self::Preview => "editor-tab.status.preview",
+        }
+    }
 }
 
 impl EditorTabChild {
@@ -203,22 +243,33 @@ impl EditorTabChild {
                         doc.buffer.with(|b| b.is_pristine()),
                         editor_data.confirmed,
                     );
+                    let read_only = content.read_only();
                     match content {
                         DocContent::File { path, .. } => {
-                            Some((path, confirmed, is_pristine))
+                            Some((path, confirmed, is_pristine, read_only))
                         }
                         DocContent::Local => None,
-                        DocContent::History(_) => None,
-                        DocContent::Scratch { name, .. } => {
-                            Some((PathBuf::from(name), confirmed, is_pristine))
+                        DocContent::History(history) => {
+                            Some((history.path, confirmed, is_pristine, read_only))
                         }
+                        DocContent::Scratch { name, .. } => Some((
+                            PathBuf::from(name),
+                            confirmed,
+                            is_pristine,
+                            read_only,
+                        )),
                     }
                 } else {
                     None
                 };
-                let (icon, color, name, confirmed, is_pristine) = match path {
-                    Some((ref path, confirmed, is_pritine)) => {
+                let (icon, color, name, status) = match path {
+                    Some((ref path, confirmed, is_pristine, read_only)) => {
                         let (svg, color) = config.file_svg(path);
+                        let status = EditorTabStatus::resolve(
+                            is_pristine,
+                            read_only,
+                            Some(confirmed.get()),
+                        );
                         (
                             svg,
                             color,
@@ -226,25 +277,33 @@ impl EditorTabChild {
                                 .unwrap_or_default()
                                 .to_string_lossy()
                                 .into_owned(),
-                            confirmed,
-                            is_pritine,
+                            status,
                         )
                     }
                     None => (
                         config.ui_svg(TexasIcons::FILE),
                         Some(config.color(TexasColor::TEXAS_ICON_ACTIVE)),
                         "local".to_string(),
-                        create_rw_signal(true),
-                        true,
+                        None,
                     ),
                 };
+                let (icon, color) = status.map_or((icon, color), |status| {
+                    let color = match status {
+                        EditorTabStatus::Modified => {
+                            config.color(TexasColor::TEXAS_WARN)
+                        }
+                        EditorTabStatus::ReadOnly | EditorTabStatus::Preview => {
+                            config.color(TexasColor::TEXAS_ICON_ACTIVE)
+                        }
+                    };
+                    (config.ui_svg(status.icon()), Some(color))
+                });
                 EditorTabChildViewInfo {
                     icon,
                     color,
                     name,
                     path: path.map(|opt| opt.0),
-                    confirmed: Some(confirmed),
-                    is_pristine,
+                    status,
                 }
             }),
             EditorTabChild::DiffEditor(diff_editor_id) => create_memo(move |_| {
@@ -252,6 +311,13 @@ impl EditorTabChild {
                 let diff_editor_data = diff_editors
                     .with(|diff_editors| diff_editors.get(&diff_editor_id).cloned());
                 let confirmed = diff_editor_data.as_ref().map(|d| d.confirmed);
+                let read_only = diff_editor_data.as_ref().is_some_and(|data| {
+                    [&data.left, &data.right].iter().all(|editor| {
+                        editor.doc_signal().with(|doc| {
+                            doc.content.with(|content| content.read_only())
+                        })
+                    })
+                });
 
                 let info = diff_editor_data
                     .map(|diff_editor_data| {
@@ -331,13 +397,28 @@ impl EditorTabChild {
                         true,
                     ),
                 };
+                let status = EditorTabStatus::resolve(
+                    is_pristine,
+                    read_only,
+                    confirmed.map(|confirmed| confirmed.get()),
+                );
+                let (icon, color) = status.map_or((icon, color), |status| {
+                    let color = match status {
+                        EditorTabStatus::Modified => {
+                            config.color(TexasColor::TEXAS_WARN)
+                        }
+                        EditorTabStatus::ReadOnly | EditorTabStatus::Preview => {
+                            config.color(TexasColor::TEXAS_ICON_ACTIVE)
+                        }
+                    };
+                    (config.ui_svg(status.icon()), Some(color))
+                });
                 EditorTabChildViewInfo {
                     icon,
                     color,
                     name: path,
                     path: None,
-                    confirmed,
-                    is_pristine,
+                    status,
                 }
             }),
             EditorTabChild::Settings(_) => create_memo(move |_| {
@@ -347,8 +428,7 @@ impl EditorTabChild {
                     color: Some(config.color(TexasColor::TEXAS_ICON_ACTIVE)),
                     name: i18n.text("editor-tab.settings"),
                     path: None,
-                    confirmed: None,
-                    is_pristine: true,
+                    status: None,
                 }
             }),
             EditorTabChild::ThemeColorSettings(_) => create_memo(move |_| {
@@ -358,8 +438,7 @@ impl EditorTabChild {
                     color: Some(config.color(TexasColor::TEXAS_ICON_ACTIVE)),
                     name: i18n.text("editor-tab.theme-colors"),
                     path: None,
-                    confirmed: None,
-                    is_pristine: true,
+                    status: None,
                 }
             }),
             EditorTabChild::Keymap(_) => create_memo(move |_| {
@@ -369,8 +448,7 @@ impl EditorTabChild {
                     color: Some(config.color(TexasColor::TEXAS_ICON_ACTIVE)),
                     name: i18n.text("editor-tab.keyboard-shortcuts"),
                     path: None,
-                    confirmed: None,
-                    is_pristine: true,
+                    status: None,
                 }
             }),
         }

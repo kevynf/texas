@@ -20,15 +20,15 @@
 
 <br/>
 
-Texas is a lightweight code editor specialized from Lapce and
-decoupled from any specific coding harness, built with Rust,
+Texas is a lightweight code editor specialized from Lapce, built with Rust,
 [Floem](https://github.com/lapce/floem), and its editor core components. It
 provides file browsing, basic editing, syntax highlighting, Git integration, a
 built-in terminal, and English and Simplified Chinese UI support.
 
 For the vibe coding era, Texas will continue to evolve as a fast, lightweight
-code editor decoupled from specific coding harnesses, with a focus on reading
-code and reviewing changes.
+code editor focused on reading code and reviewing changes. Texas will not
+include built-in AI features or introduce AI-related plugins; instead, it will
+remain a standalone tool designed to work alongside coding harnesses.
 
 ## Features
 

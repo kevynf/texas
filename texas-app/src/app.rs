@@ -37,11 +37,11 @@ use floem::{
         Line,
         style_helpers::{self, auto, fr},
     },
-    text::{Style as FontStyle, Weight},
+    text::Weight,
     unit::PxPctAuto,
     views::{
         Decorators, VirtualVector, clip, container, drag_resize_window_area,
-        drag_window_area, dyn_stack,
+        drag_window_area, dyn_container, dyn_stack,
         editor::{core::register::Clipboard, text::SystemClipboard},
         empty, label,
         scroll::{PropagatePointerWheel, VerticalScrollAsHorizontal, scroll},
@@ -103,6 +103,24 @@ use crate::{
     window_tab::{Focus, WindowTabData},
     workspace::TexasWorkspace,
 };
+
+#[cfg(windows)]
+fn enable_rounded_window_corners(window_id: WindowId) {
+    use std::{ffi::c_void, mem::size_of_val};
+    use windows::Win32::Graphics::Dwm::{
+        DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND, DwmSetWindowAttribute,
+    };
+
+    let preference = DWMWCP_ROUND;
+    unsafe {
+        let _ = DwmSetWindowAttribute(
+            window_id.into_raw() as isize,
+            DWMWA_WINDOW_CORNER_PREFERENCE,
+            &preference as *const _ as *const c_void,
+            size_of_val(&preference) as u32,
+        );
+    }
+}
 
 mod grammars;
 mod logging;
@@ -416,6 +434,9 @@ impl AppData {
         info: WindowInfo,
         files: Vec<PathObject>,
     ) -> impl View + use<> {
+        #[cfg(windows)]
+        enable_rounded_window_corners(window_id);
+
         let app_view_id = create_rw_signal(floem::ViewId::new());
         let window_data = WindowData::new(
             window_id,
@@ -691,41 +712,42 @@ fn editor_tab_header(
         let child_view = {
             let info =
                 child.view_info(editors, diff_editors, config, view_i18n.clone());
-            let hovered = create_rw_signal(false);
-
             use crate::config::ui::TabCloseButton;
 
-            let tab_icon = container({
-                svg("")
-                    .update_value(move || info.with(|info| info.icon.clone()))
-                    .style(move |s| {
+            let icon_i18n = row_i18n.clone();
+            let tab_icon = dyn_container(
+                move || {
+                    info.with(|info| (info.icon.clone(), info.color, info.status))
+                },
+                move |(icon, color, status)| {
+                    let icon_view = container(svg(icon).style(move |s| {
                         let config = config.get();
                         let size = config.ui.icon_size() as f32;
                         s.size(size, size)
-                            .apply_opt(info.with(|info| info.color), |s, c| {
-                                s.color(c)
-                            })
-                            .apply_if(
-                                !info.with(|info| info.is_pristine)
-                                    && config.ui.tab_close_button
-                                        == TabCloseButton::Off,
-                                |s| s.color(config.color(TexasColor::TEXAS_WARN)),
+                            .apply_opt(color, |s, color| s.color(color))
+                    }))
+                    .style(|s| s.padding(4.));
+
+                    if let Some(status) = status {
+                        let status_i18n = icon_i18n.clone();
+                        tooltip(icon_view, move || {
+                            let status_i18n = status_i18n.clone();
+                            tooltip_tip(
+                                config,
+                                label(move || status_i18n.text(status.i18n_key()))
+                                    .style(|s| s.selectable(false)),
                             )
-                    })
-            })
-            .style(|s| s.padding(4.));
+                        })
+                        .into_any()
+                    } else {
+                        icon_view.into_any()
+                    }
+                },
+            );
 
             let tab_content = tooltip(
-                label(move || info.with(|info| info.name.clone())).style(move |s| {
-                    s.apply_if(
-                        !info
-                            .with(|info| info.confirmed)
-                            .map(|confirmed| confirmed.get())
-                            .unwrap_or(true),
-                        |s| s.font_style(FontStyle::Italic),
-                    )
-                    .selectable(false)
-                }),
+                label(move || info.with(|info| info.name.clone()))
+                    .style(|s| s.selectable(false)),
                 move || {
                     tooltip_tip(
                         config,
@@ -740,13 +762,7 @@ fn editor_tab_header(
             );
 
             let tab_close_button = clickable_icon(
-                move || {
-                    if hovered.get() || info.with(|info| info.is_pristine) {
-                        TexasIcons::CLOSE
-                    } else {
-                        TexasIcons::UNSAVED
-                    }
-                },
+                || TexasIcons::CLOSE,
                 move || {
                     let editor_tab_id =
                         editor_tab.with_untracked(|t| t.editor_tab_id);
@@ -760,13 +776,7 @@ fn editor_tab_header(
                 row_i18n.text_signal("common.close"),
                 config,
             )
-            .on_event_stop(EventListener::PointerDown, |_| {})
-            .on_event_stop(EventListener::PointerEnter, move |_| {
-                hovered.set(true);
-            })
-            .on_event_stop(EventListener::PointerLeave, move |_| {
-                hovered.set(false);
-            });
+            .on_event_stop(EventListener::PointerDown, |_| {});
 
             stack((
                 tab_icon.style(move |s| {

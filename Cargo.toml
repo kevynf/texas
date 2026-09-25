@@ -41,6 +41,7 @@ clap              = { version = "4.5.0", default-features = false, features = ["
 cosmic-text       = { version = "0.14.2", features = ["monospace_fallback"] }
 crossbeam-channel = { version = "0.5.12" }
 directories       = { version = "4.0.1" }
+dunce             = { version = "1.0.5" }
 git2              = { version = "0.20.0", features = ["vendored-openssl"] }
 globset           = { version = "0.4.14" }
 im                = { version = "15.0.0", features = ["serde"] }
@@ -106,7 +107,7 @@ git = "https://github.com/alacritty/alacritty"
 rev = "cacdb5bb3b72bad2c729227537979d95af75978f"
 
 [workspace.dependencies.windows-sys]
-version  = "0"
+version  = "0.45.0"
 features = ["Win32_Foundation"]
 
 [profile.release-lto]
