@@ -12,6 +12,9 @@ impl TexasIcons {
     pub const ADD: &'static str = "add";
     pub const CLOSE: &'static str = "close";
     pub const UNSAVED: &'static str = "unsaved";
+    pub const TAB_PREVIEW: &'static str = "tab.preview";
+    pub const TAB_MODIFIED: &'static str = "tab.modified";
+    pub const TAB_READ_ONLY: &'static str = "tab.read-only";
     pub const WARNING: &'static str = "warning";
     pub const TERMINAL: &'static str = "terminal";
     pub const SETTINGS: &'static str = "settings";

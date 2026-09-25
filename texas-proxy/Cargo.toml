@@ -10,6 +10,7 @@ alacritty_terminal = { workspace = true }
 anyhow             = { workspace = true }
 crossbeam-channel  = { workspace = true }
 directories        = { workspace = true }
+dunce              = { workspace = true }
 git2               = { workspace = true }
 indexmap           = { workspace = true }
 notify             = { workspace = true }

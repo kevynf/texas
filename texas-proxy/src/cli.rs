@@ -4,7 +4,7 @@ use anyhow::{Error, Result};
 use texas_rpc::file::{LineCol, PathObject};
 
 pub fn parse_file_line_column(path: &str) -> Result<PathObject, Error> {
-    if let Ok(path) = PathBuf::from(path).canonicalize() {
+    if let Ok(path) = dunce::canonicalize(path) {
         return Ok(PathObject {
             is_dir: path.is_dir(),
             path,
@@ -25,7 +25,7 @@ pub fn parse_file_line_column(path: &str) -> Result<PathObject, Error> {
             let remaning: Vec<&str> = splits.rev().collect();
             let path = remaning.join(":");
             let path = PathBuf::from(path);
-            let path = if let Ok(path) = path.canonicalize() {
+            let path = if let Ok(path) = dunce::canonicalize(&path) {
                 path
             } else {
                 pwd.join(&path)
@@ -41,7 +41,7 @@ pub fn parse_file_line_column(path: &str) -> Result<PathObject, Error> {
             let remaning: Vec<&str> = splits.rev().collect();
             let path = remaning.join(":");
             let path = PathBuf::from(path);
-            let path = if let Ok(path) = path.canonicalize() {
+            let path = if let Ok(path) = dunce::canonicalize(&path) {
                 path
             } else {
                 pwd.join(&path)
@@ -87,7 +87,7 @@ mod tests {
         assert_eq!(
             parse_file_line_column(".\\..\\Cargo.toml:55").unwrap(),
             PathObject::new(
-                PathBuf::from(".\\..\\Cargo.toml").canonicalize().unwrap(),
+                dunce::canonicalize(".\\..\\Cargo.toml").unwrap(),
                 false,
                 55,
                 1
@@ -109,13 +109,13 @@ mod tests {
 
     #[test]
     fn test_current_dir() {
+        let parsed = parse_file_line_column(".").unwrap();
         assert_eq!(
-            parse_file_line_column(".").unwrap(),
-            PathObject::from_path(
-                env::current_dir().unwrap().canonicalize().unwrap(),
-                true
-            ),
+            parsed,
+            PathObject::from_path(dunce::canonicalize(".").unwrap(), true),
         );
+        #[cfg(windows)]
+        assert!(!parsed.path.to_string_lossy().starts_with(r"\\?\"));
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
         assert_eq!(
             parse_file_line_column("Cargo.toml:55").unwrap(),
             PathObject::new(
-                PathBuf::from("Cargo.toml").canonicalize().unwrap(),
+                dunce::canonicalize("Cargo.toml").unwrap(),
                 false,
                 55,
                 1
@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(
             parse_file_line_column("Cargo.toml:55:3").unwrap(),
             PathObject::new(
-                PathBuf::from("Cargo.toml").canonicalize().unwrap(),
+                dunce::canonicalize("Cargo.toml").unwrap(),
                 false,
                 55,
                 3

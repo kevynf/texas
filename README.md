@@ -20,9 +20,9 @@
 
 <br/>
 
-Texas 是一个基于 Lapce 特化开发、与特定 coding harness 解耦的轻量级代码编辑器，采用 Rust、[Floem](https://github.com/lapce/floem) 及其编辑器核心组件构建，提供文件浏览、基础编辑、语法高亮、Git 集成、内置终端，以及英文和简体中文界面。
+Texas 是一个基于 Lapce 特化开发的轻量级代码编辑器，采用 Rust、[Floem](https://github.com/lapce/floem) 及其编辑器核心组件构建，提供文件浏览、基础编辑、语法高亮、Git 集成、内置终端，以及英文和简体中文界面。
 
-面向 vibe coding 时代，Texas 将持续迭代，致力于成为一个启动迅速、与特定 coding harness 解耦，并专注于代码阅读与变更审查的轻量级代码编辑器。
+面向 vibe coding 时代，Texas 将持续迭代，致力于成为一个启动迅速、专注于代码阅读与变更审查的轻量级代码编辑器。Texas 不会内置 AI 功能，也不计划引入 AI 相关插件，而是作为独立工具与各类 coding harness 配合使用。
 
 ## 特性
 
