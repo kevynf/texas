@@ -57,7 +57,8 @@ cargo build --frozen --profile release-lto --features texas-app/portable --bin t
 ```
 
 生成的可执行文件位于 `target/release-lto/texas.exe`。GitHub Actions 的发布
-工作流会将该文件打包为 `Texas-windows-portable.zip`。
+工作流会将该文件与固定版本的语法 grammar 和 query 一起打包为
+`Texas-windows-portable.zip`。
 
 常用检查命令：
 

@@ -55,7 +55,8 @@ cargo build --frozen --profile release-lto --features texas-app/portable --bin t
 ```
 
 The executable is written to `target/release-lto/texas.exe`. The GitHub Actions
-release workflow packages it as `Texas-windows-portable.zip`.
+release workflow packages it with the pinned syntax grammars and queries as
+`Texas-windows-portable.zip`.
 
 Common checks are:
 

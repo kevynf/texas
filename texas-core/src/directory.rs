@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use directories::{BaseDirs, ProjectDirs};
 
+#[cfg(not(feature = "portable"))]
 use crate::meta::NAME;
 
 pub struct Directory {}

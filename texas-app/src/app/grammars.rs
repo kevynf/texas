@@ -9,6 +9,9 @@ use texas_core::directory::Directory;
 
 use crate::{tracing::*, update::ReleaseInfo};
 
+// Keep this aligned with GRAMMAR_RELEASE_TAG in the release workflow.
+pub const GRAMMAR_RELEASE_TAG: &str = "v0.4.5+1f9f9dd";
+
 fn get_github_api(url: &str) -> Result<String> {
     let user_agent = format!("Texas/{}", texas_core::meta::VERSION);
     let resp = texas_proxy::get_url(url, Some(user_agent.as_str()))?;
@@ -24,41 +27,15 @@ pub fn find_grammar_release() -> Result<ReleaseInfo> {
         "https://api.github.com/repos/lapce/tree-sitter-grammars/releases?per_page=100",
     ).context("Failed to retrieve releases for tree-sitter-grammars")?)?;
 
-    use texas_core::meta::{RELEASE, ReleaseType, VERSION};
+    select_grammar_release(releases).ok_or_else(|| {
+        anyhow!("Couldn't find grammar release {GRAMMAR_RELEASE_TAG}")
+    })
+}
 
-    let releases = releases
+fn select_grammar_release(releases: Vec<ReleaseInfo>) -> Option<ReleaseInfo> {
+    releases
         .into_iter()
-        .filter_map(|f| {
-            if matches!(RELEASE, ReleaseType::Debug | ReleaseType::Nightly) {
-                return Some(f);
-            }
-
-            let tag_name = if f.tag_name.starts_with('v') {
-                f.tag_name.trim_start_matches('v')
-            } else {
-                f.tag_name.as_str()
-            };
-
-            use std::cmp::Ordering;
-
-            use semver::Version;
-
-            let sv = Version::parse(tag_name).ok()?;
-            let version = Version::parse(VERSION).ok()?;
-
-            if matches!(sv.cmp_precedence(&version), Ordering::Equal) {
-                Some(f)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    let Some(release) = releases.first() else {
-        return Err(anyhow!("Couldn't find any release"));
-    };
-
-    Ok(release.to_owned())
+        .find(|release| release.tag_name == GRAMMAR_RELEASE_TAG)
 }
 
 pub fn fetch_grammars(release: &ReleaseInfo) -> Result<bool> {
@@ -138,4 +115,31 @@ fn download_release(
         }
     }
     Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{GRAMMAR_RELEASE_TAG, select_grammar_release};
+    use crate::update::ReleaseInfo;
+
+    fn release(tag_name: &str) -> ReleaseInfo {
+        ReleaseInfo {
+            tag_name: tag_name.to_owned(),
+            target_commitish: String::new(),
+            assets: Vec::new(),
+            version: String::new(),
+        }
+    }
+
+    #[test]
+    fn grammar_release_is_selected_independently_of_app_version() {
+        let selected = select_grammar_release(vec![
+            release("v0.1.0"),
+            release(GRAMMAR_RELEASE_TAG),
+            release("nightly"),
+        ])
+        .unwrap();
+
+        assert_eq!(selected.tag_name, GRAMMAR_RELEASE_TAG);
+    }
 }

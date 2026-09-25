@@ -4705,7 +4705,7 @@ dependencies = [
 
 [[package]]
 name = "texas"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "resvg",
@@ -4716,7 +4716,7 @@ dependencies = [
 
 [[package]]
 name = "texas-app"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "Inflector",
  "alacritty_terminal",
@@ -4743,7 +4743,6 @@ dependencies = [
  "parking_lot",
  "rayon",
  "regex",
- "semver",
  "serde",
  "serde_json",
  "sha2",
@@ -4771,7 +4770,7 @@ dependencies = [
 
 [[package]]
 name = "texas-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ahash",
  "anyhow",
@@ -4797,7 +4796,7 @@ dependencies = [
 
 [[package]]
 name = "texas-proxy"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "alacritty_terminal",
  "anyhow",
@@ -4824,7 +4823,7 @@ dependencies = [
 
 [[package]]
 name = "texas-rpc"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossbeam-channel",
  "human-sort",

@@ -24,7 +24,7 @@ path = "texas-app/src/bin/texas.rs"
 members = ["texas-app", "texas-proxy", "texas-rpc", "texas-core"]
 
 [workspace.package]
- version      = "0.1.0"
+ version      = "0.1.1"
 description  = "A lightweight code editor with Git integration, a built-in terminal, and English and Simplified Chinese UI support."
 edition      = "2024"
 rust-version = "1.87.0"
@@ -55,7 +55,6 @@ parking_lot       = { version = "0.12.3" }
 rayon             = { version = "1.10.0" }
 regex             = { version = "1.10.5" }
 remain            = { version = "0.2" }
-semver            = { version = "1.0" }
 reqwest           = { version = "0.11", features = ["blocking", "json", "socks"] }
 serde             = { version = "1.0" }
 serde_json        = { version = "1.0" }

@@ -16,18 +16,24 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # Keep this aligned with GRAMMAR_RELEASE_TAG in texas-app/src/app/grammars.rs.
+  GRAMMAR_RELEASE_TAG: v0.4.5+1f9f9dd
 
 jobs:
   windows:
     name: Windows release
     runs-on: windows-latest
+    permissions:
+      contents: write
     env:
       RELEASE_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Update Rust
         run: rustup update --no-self-update
@@ -42,33 +48,32 @@ jobs:
         shell: pwsh
         run: |
           cargo build --frozen --profile release-lto --features texas-app/portable --bin texas
-          Compress-Archive ./target/release-lto/texas.exe ./Texas-windows-portable.zip
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: texas-windows
-          path: |
-            ./Texas-windows-portable.zip
-          retention-days: 1
-
-  publish:
-    name: Publish Windows release
-    needs: windows
-    runs-on: ubuntu-latest
-    env:
-      GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      RELEASE_TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
+          $packageRoot = Join-Path $env:RUNNER_TEMP "texas-portable"
+          $assetsRoot = Join-Path $env:RUNNER_TEMP "texas-grammar-assets"
+          $grammars = Join-Path $packageRoot "texas-data/data/grammars"
+          $queries = Join-Path $packageRoot "texas-data/config/queries"
+          New-Item -ItemType Directory -Path $packageRoot, $assetsRoot, $grammars, $queries | Out-Null
+          Copy-Item ./target/release-lto/texas.exe $packageRoot
+          gh release download $env:GRAMMAR_RELEASE_TAG `
+            --repo lapce/tree-sitter-grammars `
+            --pattern grammars-windows-x86_64.tar.zst `
+            --pattern queries.tar.zst `
+            --dir $assetsRoot
+          tar -xf (Join-Path $assetsRoot "grammars-windows-x86_64.tar.zst") -C $grammars
+          tar -xf (Join-Path $assetsRoot "queries.tar.zst") -C $queries
+          [System.IO.File]::WriteAllText((Join-Path $grammars "version"), $env:GRAMMAR_RELEASE_TAG)
+          [System.IO.File]::WriteAllText((Join-Path $queries "version"), $env:GRAMMAR_RELEASE_TAG)
+          if (!(Test-Path (Join-Path $grammars "libtree-sitter-rust.dll"))) {
+            throw "Rust grammar is missing from the portable package"
+          }
+          if (!(Test-Path (Join-Path $queries "rust/highlights.scm"))) {
+            throw "Rust highlight query is missing from the portable package"
+          }
+          Compress-Archive (Join-Path $packageRoot "*") ./Texas-windows-portable.zip
 
       - name: Publish release
         run: |
           gh release create "$RELEASE_TAG_NAME" \
             --title "$RELEASE_TAG_NAME" \
             --target "$GITHUB_SHA" \
-            texas-windows/*
+            Texas-windows-portable.zip
